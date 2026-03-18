@@ -91,7 +91,7 @@
       let progress = 0;
       const barEl = document.getElementById('bar');
       const timer = setInterval(() => {
-        progress += 2.5;
+        progress += 10;
         barEl.style.width = Math.min(progress, 100) + '%';
         if (progress >= 100) clearInterval(timer);
       }, 50);
@@ -114,7 +114,7 @@
           // 앱 없으면 → 웹으로 fallback
           setTimeout(() => {
             window.location.href = targetURL;
-          }, 2000);
+          }, 500);
 
         } else {
           // PC
