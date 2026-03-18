@@ -56,13 +56,13 @@
 </head>
 <body>
   <div class="card">
-    <div class="icon">🛒</div>
-    <h2>쿠팡으로 이동 중...</h2>
-    <p>쿠팡 앱을 실행하고 있어요.<br>잠시만 기다려 주세요.</p>
+    <div class="icon" id="icon">🛒</div>
+    <h2 id="title">이동 중...</h2>
+    <p id="desc">잠시만 기다려 주세요.</p>
     <div class="bar-wrap"><div class="bar" id="bar"></div></div>
     <p style="font-size:0.82rem; color:#bbb;">이동이 안 되면 아래 버튼을 눌러주세요</p>
     <br>
-    <a class="btn" id="manual-btn" href="#">쿠팡 바로가기 →</a>
+    <a class="btn" id="manual-btn" href="#">바로가기 →</a>
   </div>
 
   <script>
@@ -71,8 +71,10 @@
       const encoded = params.get('u');
 
       if (!encoded) {
-        document.querySelector('h2').textContent = '링크 오류';
-        document.querySelector('p').textContent = '유효하지 않은 링크입니다.';
+        document.getElementById('icon').textContent = '❌';
+        document.getElementById('title').textContent = '링크 오류';
+        document.getElementById('desc').textContent = '유효하지 않은 링크입니다.';
+        document.getElementById('bar-wrap');
         return;
       }
 
@@ -83,6 +85,10 @@
       const isAndroid = /android/.test(ua);
       const isIOS = /iphone|ipad|ipod/.test(ua);
 
+      // 쿠팡 링크 여부 판단
+      const isCoupang = /coupang\.com/.test(targetURL);
+
+      // 프로그레스 바
       let progress = 0;
       const barEl = document.getElementById('bar');
       const timer = setInterval(() => {
@@ -91,7 +97,12 @@
         if (progress >= 100) clearInterval(timer);
       }, 50);
 
-      function tryDeepLink() {
+      if (isCoupang) {
+        // ✅ 쿠팡 링크 → 쿠팡 앱 실행 시도 후 fallback
+        document.getElementById('title').textContent = '쿠팡으로 이동 중...';
+        document.getElementById('desc').textContent = '쿠팡 앱을 실행하고 있어요.\n잠시만 기다려 주세요.';
+        document.getElementById('manual-btn').textContent = '쿠팡 바로가기 →';
+
         if (isAndroid) {
           const intentUrl =
             'intent://home#Intent;' +
@@ -112,11 +123,38 @@
           }, 2000);
 
         } else {
+          // PC
+          window.location.href = targetURL;
+        }
+
+      } else {
+        // ✅ 인포크 등 일반 링크 → 쿠팡 앱 시도 없이 외부 브라우저로 바로 이동
+        document.getElementById('title').textContent = '페이지로 이동 중...';
+        document.getElementById('desc').textContent = '외부 브라우저로 연결하고 있어요.\n잠시만 기다려 주세요.';
+        document.getElementById('manual-btn').textContent = '바로가기 →';
+
+        if (isAndroid) {
+          // Android: intent로 외부 브라우저 강제 실행
+          const intentUrl =
+            'intent://' + targetURL.replace(/^https?:\/\//, '') +
+            '#Intent;' +
+            'scheme=https;' +
+            'action=android.intent.action.VIEW;' +
+            'category=android.intent.category.BROWSABLE;' +
+            'S.browser_fallback_url=' + encodeURIComponent(targetURL) + ';' +
+            'end';
+          window.location.href = intentUrl;
+
+        } else if (isIOS) {
+          // iOS: 그냥 이동 (iOS는 틱톡 인앱에서도 외부 브라우저로 잘 빠져나감)
+          window.location.href = targetURL;
+
+        } else {
+          // PC
           window.location.href = targetURL;
         }
       }
 
-      tryDeepLink();
     })();
   </script>
 </body>
