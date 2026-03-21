@@ -56,7 +56,7 @@
 </head>
 <body>
   <div class="card">
-    <div class="icon" id="icon">🛒</div>
+    <div class="icon">🛒</div>
     <h2 id="title">이동 중...</h2>
     <p id="desc">잠시만 기다려 주세요.</p>
     <div class="bar-wrap"><div class="bar" id="bar"></div></div>
@@ -82,10 +82,6 @@
 
       const ua = navigator.userAgent.toLowerCase();
       const isAndroid = /android/.test(ua);
-      const isIOS = /iphone|ipad|ipod/.test(ua);
-
-      // 쿠팡 링크 여부 판단
-      const isCoupang = /coupang\.com/.test(targetURL);
 
       // 프로그레스 바
       let progress = 0;
@@ -96,53 +92,22 @@
         if (progress >= 100) clearInterval(timer);
       }, 50);
 
-      if (isCoupang) {
-        // ✅ 쿠팡 링크 → 쿠팡 앱 실행 시도 후 상품 페이지 fallback
-        document.getElementById('title').textContent = '쿠팡으로 이동 중...';
-        document.getElementById('desc').textContent = '쿠팡 앱을 실행하고 있어요.\n잠시만 기다려 주세요.';
-        document.getElementById('manual-btn').textContent = '쿠팡 바로가기 →';
-
-        if (isAndroid || isIOS) {
-          // 앱 스킴으로 쿠팡 앱 깨우기 시도
-          const iframe = document.createElement('iframe');
-          iframe.style.display = 'none';
-          iframe.src = 'coupang://';
-          document.body.appendChild(iframe);
-
-          // 2초 후 무조건 웹 상품 URL로 이동
-          // 앱 있으면 → 앱이 이미 실행됨 + 웹도 열림 (외부 브라우저로)
-          // 앱 없으면 → 웹으로 fallback
-          setTimeout(() => {
-            window.location.href = targetURL;
-          }, 500);
-
-        } else {
-          // PC
-          window.location.href = targetURL;
-        }
+      // ✅ 모든 URL을 외부 브라우저로 이동
+      // Android: Intent로 외부 브라우저 강제 실행
+      // iOS/PC: 그냥 이동 (틱톡 iOS는 원래 외부 브라우저로 잘 빠져나감)
+      if (isAndroid) {
+        const intentUrl =
+          'intent://' + targetURL.replace(/^https?:\/\//, '') +
+          '#Intent;' +
+          'scheme=https;' +
+          'action=android.intent.action.VIEW;' +
+          'category=android.intent.category.BROWSABLE;' +
+          'S.browser_fallback_url=' + encodeURIComponent(targetURL) + ';' +
+          'end';
+        window.location.href = intentUrl;
 
       } else {
-        // ✅ 인포크 등 일반 링크 → 외부 브라우저로 바로 이동
-        document.getElementById('title').textContent = '페이지로 이동 중...';
-        document.getElementById('desc').textContent = '외부 브라우저로 연결하고 있어요.\n잠시만 기다려 주세요.';
-        document.getElementById('manual-btn').textContent = '바로가기 →';
-
-        if (isAndroid) {
-          // Android: intent로 외부 브라우저 강제 실행
-          const intentUrl =
-            'intent://' + targetURL.replace(/^https?:\/\//, '') +
-            '#Intent;' +
-            'scheme=https;' +
-            'action=android.intent.action.VIEW;' +
-            'category=android.intent.category.BROWSABLE;' +
-            'S.browser_fallback_url=' + encodeURIComponent(targetURL) + ';' +
-            'end';
-          window.location.href = intentUrl;
-
-        } else {
-          // iOS / PC
-          window.location.href = targetURL;
-        }
+        window.location.href = targetURL;
       }
 
     })();
